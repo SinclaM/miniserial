@@ -1,0 +1,21 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "miniserial"
+version = "0.0.1"
+description = "Simple, fast, and space-efficient (de)serialization for simple Python classes"
+readme = "README.md"
+authors = [{ name = "Matthew Sinclair", email = "sinclam.dev@gmail.com" }]
+license = { file = "LICENSE" }
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+keywords = ["serialize", "serialization"]
+requires-python = ">=3.10"
+
+[project.urls]
+Homepage = "https://github.com/sinclam/miniserial"
