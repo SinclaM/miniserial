@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import NoReturn, Type, Any, Tuple
 from functools import singledispatchmethod
 from struct import pack, unpack
+from functools import partial
 
 class _Serde():
     @singledispatchmethod
@@ -46,25 +47,26 @@ class _Serde():
 
 _serde = _Serde()
 
-def serializable(cls):
-    @dataclass
-    class wrapper:
-        def __init__(self, *args):
-            self.wrapped = cls(*args)
-        def __getattr__(self, *args):
-            return getattr(self.wrapped, *args)
-        def serialize(self) -> bytes:
-            return b"".join([_serde.serialize(v) for v in vars(self.wrapped).values()])
+def _pseudo_serializable(cls, reference):
+    def serialize(self) -> bytes:
+        return b"".join([_serde.serialize(v) for v in vars(self).values()])
 
-        @staticmethod
-        def deserialize(b: bytes, reference: cls):
-            fields: dict[str, Any] = vars(reference.wrapped)
-            params: dict[str, Any] = {}
+    @classmethod
+    def deserialize(cls, b: bytes):
+        fields: dict[str, Any] = vars(reference())
+        params: dict[str, Any] = {}
 
-            remaining = b
-            for field in fields.keys():
-                v, remaining = _serde.deserialize(getattr(reference, field), remaining)
-                params[field] = v
-            return wrapper(*params)
+        remaining = b
+        for field in fields.keys():
+            v, remaining = _serde.deserialize(getattr(reference(), field), remaining)
+            params[field] = v
+        return cls(**params)
 
-    return wrapper
+    cls.serialize = serialize
+    cls.deserialize = deserialize
+
+    return cls
+
+def serializable(reference):
+    return partial(_pseudo_serializable, reference=reference)
+
