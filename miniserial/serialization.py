@@ -1,7 +1,8 @@
-from __future__ import annotations
+from typing import cast
 from dataclasses import dataclass, fields
-from typing import Any, Tuple, TypeVar
+from typing import Any, Tuple, TypeVar, Union
 from struct import pack, unpack
+from typing_inspect import get_args, get_origin
 
 # TODO: why does `from __future__ import annotations` break things
 # when used in the same file as a class definiton that uses the
@@ -20,15 +21,16 @@ def _serialize(v) -> bytes:
         out =  pack("<f", v)
     elif isinstance(v, str):
         out = v.encode() + b"\x00"
+    elif isinstance(v, list):
+        out = pack("<I", len(v))
+        for x in v:
+            out += _serialize(x)
     else:
         raise Exception(f"Unknown type: {type(v)}")
 
     return out
 
 def _deserialize(type_: T, b: bytes) -> Tuple[T, bytes]:
-    result: T
-    remaining: bytes
-
     if type_ is bool:
         result = unpack("<?", b[0:1])[0]
         remaining = b[1:]
@@ -39,12 +41,21 @@ def _deserialize(type_: T, b: bytes) -> Tuple[T, bytes]:
         result = unpack("<f", b[0:4])[0]
         remaining = b[4:]
     elif type_ is str:
-        result = b[:b.index(b"\x00")].decode() #type: ignore
-        remaining = b[b.index(b"\x00") + 1:]
+        i = b.index(b"\x00")
+        result = b[:i].decode()
+        remaining = b[i + 1:]
+    elif get_origin(type_) is list:
+        args = get_args(type_)
+        len_ = unpack("<I", b[0:4])[0]
+        result = []
+        remaining = b[4:]
+        for _ in range(len_):
+            v, remaining = _deserialize(args[0], remaining)
+            result.append(v)
     else:
         raise Exception(f"Unknown type: {type_}")
 
-    return result, remaining
+    return cast(T, result), remaining
 
 class Serializable():
     def serialize(self) -> bytes:
