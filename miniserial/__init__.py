@@ -1,1 +1,1 @@
-from miniserial.serialization import serializable
+from miniserial.serialization import Serializable

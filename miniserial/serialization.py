@@ -1,72 +1,61 @@
-from dataclasses import dataclass
-from typing import NoReturn, Type, Any, Tuple
-from functools import singledispatchmethod
+from __future__ import annotations
+from dataclasses import dataclass, fields
+from typing import Any, Tuple, TypeVar
 from struct import pack, unpack
-from functools import partial
 
-class _Serde():
-    @singledispatchmethod
-    def serialize(self, v) -> NoReturn:
-        raise NotImplementedError(f"Cannot serialize value of type {type(v)}")
+# TODO: why does `from __future__ import annotations` break things
+# when used in the same file as a class definiton that uses the
+# `Serializable` mixin?
 
-    @singledispatchmethod
-    def deserialize(self, type_: Type, _: bytes) -> NoReturn:
-        raise NotImplementedError(f"Cannot deserialize into type {type_}")
+T = TypeVar("T")
 
-    @serialize.register
-    def _(self, v: bool) -> bytes:
-        return pack("<?", v)
+def _serialize(v) -> bytes:
+    out: bytes
 
-    @deserialize.register
-    def _(self, _: bool, b: bytes) -> Tuple[bool, bytes]:
-        return unpack("<?", b[0:1])[0], b[1:]
+    if isinstance(v, bool):
+        out =  pack("<?", v)
+    elif isinstance(v, int):
+        out =  pack("<i", v)
+    elif isinstance(v, float):
+        out =  pack("<f", v)
+    elif isinstance(v, str):
+        out = v.encode() + b"\x00"
+    else:
+        raise Exception(f"Unknown type: {type(v)}")
 
-    @serialize.register
-    def _(self, v: int) -> bytes:
-        return pack("<i", v)
+    return out
 
-    @deserialize.register
-    def _(self, _: int, b: bytes) -> Tuple[int, bytes]:
-        return unpack("<i", b[0:4])[0], b[4:]
+def _deserialize(type_: T, b: bytes) -> Tuple[T, bytes]:
+    result: T
+    remaining: bytes
 
-    @serialize.register
-    def _(self, v: float) -> bytes:
-        return pack("<f", v)
+    if type_ is bool:
+        result = unpack("<?", b[0:1])[0]
+        remaining = b[1:]
+    elif type_ is int:
+        result = unpack("<i", b[0:4])[0]
+        remaining = b[4:]
+    elif type_ is float:
+        result = unpack("<f", b[0:4])[0]
+        remaining = b[4:]
+    elif type_ is str:
+        result = b[:b.index(b"\x00")].decode() #type: ignore
+        remaining = b[b.index(b"\x00") + 1:]
+    else:
+        raise Exception(f"Unknown type: {type_}")
 
-    @deserialize.register
-    def _(self, _: float, b: bytes) -> Tuple[float, bytes]:
-        return unpack("<f", b[0:4])[0], b[4:]
+    return result, remaining
 
-    @serialize.register
-    def _(self, v: str) -> bytes:
-        return v.encode() + b"\x00"
-
-    @deserialize.register
-    def _(self, _: str, b: bytes) -> Tuple[str, bytes]:
-        return b[:b.index(b"\x00")].decode(), b[b.index(b"\x00") + 1:]
-
-_serde = _Serde()
-
-def _pseudo_serializable(cls, reference):
+class Serializable():
     def serialize(self) -> bytes:
-        return b"".join([_serde.serialize(v) for v in vars(self).values()])
+        return b"".join([_serialize(v) for v in vars(self).values()])
 
     @classmethod
     def deserialize(cls, b: bytes):
-        fields: dict[str, Any] = vars(reference())
         params: dict[str, Any] = {}
 
         remaining = b
-        for field in fields.keys():
-            v, remaining = _serde.deserialize(getattr(reference(), field), remaining)
-            params[field] = v
-        return cls(**params)
-
-    cls.serialize = serialize
-    cls.deserialize = deserialize
-
-    return cls
-
-def serializable(reference):
-    return partial(_pseudo_serializable, reference=reference)
-
+        for field in fields(cls):
+            v, remaining = _deserialize(field.type, remaining)
+            params[field.name] = v
+        return cls(**params) #type: ignore
