@@ -1,3 +1,4 @@
+from __future__ import annotations
 import unittest
 from struct import pack
 from dataclasses import dataclass
@@ -23,8 +24,13 @@ class Person(Serializable):
     titles : list[str]
     balance: float
 
+@dataclass
+class Node(Serializable):
+    value   : int
+    children: list[Node]
+
 class SerializaitonTests(unittest.TestCase):
-    def test_serialize(self) -> None:
+    def test_simple(self) -> None:
         f = Foo(1, 2.0, "hello", True)
 
         serialized = pack("<i", f.x) + pack("<f", f.y) + f.z.encode() + b"\x00" + pack("<?", f.b)
@@ -39,4 +45,13 @@ class SerializaitonTests(unittest.TestCase):
 
         p = Person("Bob", 34, ["Mr.", "Dr.", "Professor"], 239847.25)
         self.assertEqual(Person.deserialize(p.serialize()), p)
+
+    def test_tree(self) -> None:
+        #                 1
+        #               /   \ 
+        #              2     3 
+        #             / \
+        #            4   5
+        tree = Node(1, [Node(2, [Node(4, []), Node(5, [])]), Node(3, [])])
+        self.assertEqual(Node.deserialize(tree.serialize()), tree)
 

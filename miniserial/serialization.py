@@ -1,4 +1,4 @@
-from typing import cast, get_type_hints
+from typing import cast, get_type_hints, Type
 from dataclasses import fields
 from typing import Any, Tuple, TypeVar
 from struct import pack, unpack
@@ -21,6 +21,8 @@ def _serialize(v) -> bytes:
         out = pack("<I", len(v))
         for x in v:
             out += _serialize(x)
+    elif hasattr(v, "serialize"):
+        out = v.serialize()
     else:
         raise Exception(f"Unknown type: {type(v)}")
 
@@ -48,6 +50,8 @@ def _deserialize(type_: T, b: bytes) -> Tuple[T, bytes]:
         for _ in range(len_):
             v, remaining = _deserialize(args[0], remaining)
             result.append(v)
+    elif hasattr(type_, "_partial_deserialize"):
+        result, remaining = type_._partial_deserialize(b) #type: ignore
     else:
         raise Exception(f"Unknown type: {type_}")
 
@@ -58,7 +62,7 @@ class Serializable():
         return b"".join([_serialize(v) for v in vars(self).values()])
 
     @classmethod
-    def deserialize(cls, b: bytes):
+    def _partial_deserialize(cls: Type[T], b: bytes) -> Tuple[T, bytes]:
         params: dict[str, Any] = {}
 
         # Type hints must be gathered from typing.get_type_hints instead of
@@ -71,4 +75,8 @@ class Serializable():
         for field in fields(cls):
             v, remaining = _deserialize(resolved[field.name], remaining)
             params[field.name] = v
-        return cls(**params) #type: ignore
+        return cls(**params), remaining #type: ignore
+
+    @classmethod
+    def deserialize(cls: Type[T], b: bytes) -> T:
+        return cls._partial_deserialize(b)[0] # type: ignore
