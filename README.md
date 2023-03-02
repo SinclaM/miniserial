@@ -27,8 +27,6 @@ assert Person.deserialize(p.serialize()) == p
 ```
 
 Classes that inherit the `Serializable` mixin must be dataclasses composed of fields annotated with simple types.
-Postponed annotation evaluation (PEP 563) is not currently supported, so serializable classes must not be
-defined in a file with the import: `from __future__ import annotations`.
 
 Documentation of supported types and the serialization format is on the way. For now, `bool`, `int`, `float`, `str`,
 and `list` are supported. `int` and `float` are taken to be 32 bit values. Support for more types, including
