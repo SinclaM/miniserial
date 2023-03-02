@@ -1,10 +1,11 @@
+from __future__ import annotations
 from typing import cast, get_type_hints, Type
 from dataclasses import fields
 from typing import Any, Tuple, TypeVar
 from struct import pack, unpack
-from typing_inspect import get_args, get_origin
+from abc import abstractmethod
 
-T = TypeVar("T")
+from typing_inspect import get_args, get_origin
 
 def _serialize(v) -> bytes:
     out: bytes
@@ -21,14 +22,14 @@ def _serialize(v) -> bytes:
         out = pack("<I", len(v))
         for x in v:
             out += _serialize(x)
-    elif hasattr(v, "serialize"):
+    elif isinstance(v, Serializable):
         out = v.serialize()
     else:
         raise Exception(f"Unknown type: {type(v)}")
 
     return out
 
-def _deserialize(type_: T, b: bytes) -> Tuple[T, bytes]:
+def _deserialize(type_: Type[T], b: bytes) -> Tuple[T, bytes]:
     if type_ is bool:
         result = unpack("<?", b[0:1])[0]
         remaining = b[1:]
@@ -50,14 +51,17 @@ def _deserialize(type_: T, b: bytes) -> Tuple[T, bytes]:
         for _ in range(len_):
             v, remaining = _deserialize(args[0], remaining)
             result.append(v)
-    elif hasattr(type_, "_partial_deserialize"):
-        result, remaining = type_._partial_deserialize(b) #type: ignore
+    elif issubclass(type_, Serializable):
+        result, remaining = type_._partial_deserialize(b)
     else:
         raise Exception(f"Unknown type: {type_}")
 
     return cast(T, result), remaining
 
 class Serializable():
+    @abstractmethod
+    def __init__(self, *args, **kwargs) -> None: ...
+
     def serialize(self) -> bytes:
         return b"".join([_serialize(v) for v in vars(self).values()])
 
@@ -75,8 +79,11 @@ class Serializable():
         for field in fields(cls):
             v, remaining = _deserialize(resolved[field.name], remaining)
             params[field.name] = v
-        return cls(**params), remaining #type: ignore
+        return cls(**params), remaining
 
     @classmethod
     def deserialize(cls: Type[T], b: bytes) -> T:
-        return cls._partial_deserialize(b)[0] # type: ignore
+        return cls._partial_deserialize(b)[0]
+
+T = TypeVar("T", bound=Serializable)
+
