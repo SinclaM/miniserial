@@ -1,6 +1,6 @@
 from typing import cast
-from dataclasses import dataclass, fields
-from typing import Any, Tuple, TypeVar, Union
+from dataclasses import fields
+from typing import Any, Tuple, TypeVar
 from struct import pack, unpack
 from typing_inspect import get_args, get_origin
 
