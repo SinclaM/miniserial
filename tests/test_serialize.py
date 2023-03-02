@@ -16,6 +16,13 @@ class Bar(Serializable):
     x: int
     y: list[float]
 
+@dataclass
+class Person(Serializable):
+    name   : str
+    age    : int
+    titles : list[str]
+    balance: float
+
 class SerializaitonTests(unittest.TestCase):
     def test_serialize(self) -> None:
         f = Foo(1, 2.0, "hello", True)
@@ -29,4 +36,7 @@ class SerializaitonTests(unittest.TestCase):
         self.assertEqual(deserialized.x, b.x)
         for u, v in zip(deserialized.y, b.y):
             self.assertAlmostEqual(u, v, places=6)
+
+        p = Person("Bob", 34, ["Mr.", "Dr.", "Professor"], 239847.25)
+        self.assertEqual(Person.deserialize(p.serialize()), p)
 
