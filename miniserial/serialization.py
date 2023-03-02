@@ -1,12 +1,8 @@
-from typing import cast
+from typing import cast, get_type_hints
 from dataclasses import fields
 from typing import Any, Tuple, TypeVar
 from struct import pack, unpack
 from typing_inspect import get_args, get_origin
-
-# TODO: why does `from __future__ import annotations` break things
-# when used in the same file as a class definiton that uses the
-# `Serializable` mixin?
 
 T = TypeVar("T")
 
@@ -65,8 +61,14 @@ class Serializable():
     def deserialize(cls, b: bytes):
         params: dict[str, Any] = {}
 
+        # Type hints must be gathered from typing.get_type_hints instead of
+        # from dataclasses.fields. Types given in the latter are not resolved
+        # if postponed annotation evaluation is enabled (through `from __future__
+        # import annotations`) and are simply strings.
+        resolved = get_type_hints(cls)
+
         remaining = b
         for field in fields(cls):
-            v, remaining = _deserialize(field.type, remaining)
+            v, remaining = _deserialize(resolved[field.name], remaining)
             params[field.name] = v
         return cls(**params) #type: ignore
