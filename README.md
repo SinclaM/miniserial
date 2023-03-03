@@ -1,5 +1,8 @@
 # Miniserial
 
+![PyPI](https://img.shields.io/pypi/v/miniserial)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/miniserial)
+
 Miniserial is a Python package for dead-simple, space-efficient serialization
 and deserialization of simple dataclasses. There are many great packages for
 general purpose serialization in the standard library and on PyPI (e.g. `json`,
