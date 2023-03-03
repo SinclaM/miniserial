@@ -18,6 +18,12 @@ freeze:
 test:
 	@python3 -m unittest discover tests/
 
+# Build and publish
+publish:
+	@rm -rf dist
+	@python -m build
+	@python -m twine upload -u '__token__' -p ${PYPI_API_TOKEN} dist/*
+
 clean:
 	# Delete all __pycache__ folders
 	find . -type d -name __pycache__ -exec rm -r {} \+

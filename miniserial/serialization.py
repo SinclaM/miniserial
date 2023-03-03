@@ -45,7 +45,7 @@ def _deserialize(type_: Type[T], b: bytes) -> Tuple[T, bytes]:
         i = b.index(b"\x00")
         result = b[:i].decode()
         remaining = b[i + 1:]
-    elif isclass(o := get_origin(type_)) and issubclass(o, Collection):
+    elif isclass(get_origin(type_)) and issubclass(get_origin(type_), Collection):
         args = get_args(type_)
         len_ = unpack("<I", b[0:4])[0]
         result = []
