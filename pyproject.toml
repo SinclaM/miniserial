@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "miniserial"
-version = "0.2.2"
+version = "0.2.4"
 description = "Simple, fast, and space-efficient (de)serialization for simple Python classes"
 readme = "README.md"
 authors = [{ name = "Matthew Sinclair", email = "sinclam.dev@gmail.com" }]
@@ -13,6 +13,9 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
 ]
 keywords = ["serialize", "serialization"]
 requires-python = ">=3.9"
