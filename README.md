@@ -56,7 +56,8 @@ assert Node.deserialize(tree.serialize()) == tree
 ```
 
 Documentation of supported types and the serialization format is on the way. For
-now, `bool`, `int`, `float`, `str`, and `list` are supported, along with any
-other user-defined class that inherits `Serializable`. `int` and `float` are
-taken to be 32 bit values. Support for more types, including `int64`, `float64`,
-etc. from `numpy` are on the horizon.
+now, `bool`, `int`, `float`, `str`, and subclasses of `collections.abc.Collection`
+(e.g. `list`, `set`, `tuple`) are supported, along with any other user-defined
+class that inherits `Serializable`. `int` and `float` are taken to be 32 bit
+values. Support for more types, including `int64`, `float64`, etc. from `numpy`
+are on the horizon.

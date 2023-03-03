@@ -15,7 +15,7 @@ class Foo(Serializable):
 @dataclass
 class Bar(Serializable):
     x: int
-    y: list[float]
+    y: set[float]
 
 @dataclass
 class Person(Serializable):
@@ -37,7 +37,7 @@ class SerializaitonTests(unittest.TestCase):
         self.assertEqual(f.serialize(), serialized)
         self.assertEqual(Foo.deserialize(f.serialize()), f)
 
-        b = Bar(11, [0.0, -1.0, 13.432])
+        b = Bar(11, {0.0, -1.0, 13.432})
         deserialized = Bar.deserialize(b.serialize())
         self.assertEqual(deserialized.x, b.x)
         for u, v in zip(deserialized.y, b.y):

@@ -1,7 +1,9 @@
 from __future__ import annotations
-from typing import cast, get_type_hints, Type
+from typing import cast, get_type_hints
+from typing import Type, Any, Tuple, TypeVar
+from inspect import isclass
+from collections.abc import Collection
 from dataclasses import fields
-from typing import Any, Tuple, TypeVar
 from struct import pack, unpack
 from abc import abstractmethod
 
@@ -18,7 +20,7 @@ def _serialize(v) -> bytes:
         out =  pack("<f", v)
     elif isinstance(v, str):
         out = v.encode() + b"\x00"
-    elif isinstance(v, list):
+    elif isinstance(v, Collection):
         out = pack("<I", len(v))
         for x in v:
             out += _serialize(x)
@@ -43,7 +45,7 @@ def _deserialize(type_: Type[T], b: bytes) -> Tuple[T, bytes]:
         i = b.index(b"\x00")
         result = b[:i].decode()
         remaining = b[i + 1:]
-    elif get_origin(type_) is list:
+    elif isclass(o := get_origin(type_)) and issubclass(o, Collection):
         args = get_args(type_)
         len_ = unpack("<I", b[0:4])[0]
         result = []
@@ -51,7 +53,7 @@ def _deserialize(type_: Type[T], b: bytes) -> Tuple[T, bytes]:
         for _ in range(len_):
             v, remaining = _deserialize(args[0], remaining)
             result.append(v)
-    elif issubclass(type_, Serializable):
+    elif isclass(type_) and issubclass(type_, Serializable):
         result, remaining = type_._partial_deserialize(b)
     else:
         raise Exception(f"Unknown type: {type_}")
