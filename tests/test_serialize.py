@@ -18,6 +18,13 @@ class Bar(Serializable):
     y: set[float]
 
 @dataclass
+class Baz(Serializable):
+    x: bool
+    y: dict[str, float]
+    z: list[Bar]
+
+
+@dataclass
 class Person(Serializable):
     name   : str
     age    : int
@@ -45,6 +52,9 @@ class SerializaitonTests(unittest.TestCase):
 
         p = Person("Bob", 34, ["Mr.", "Dr.", "Professor"], 239847.25)
         self.assertEqual(Person.deserialize(p.serialize()), p)
+
+        baz = Baz(True, {"some_key": 12.5, "another_key": 0.0}, [Bar(-200, set())])
+        self.assertEqual(Baz.deserialize(baz.serialize()), baz)
 
     def test_tree(self) -> None:
         #                 1

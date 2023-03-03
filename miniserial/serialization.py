@@ -20,6 +20,11 @@ def _serialize(v) -> bytes:
         out =  pack("<f", v)
     elif isinstance(v, str):
         out = v.encode() + b"\x00"
+    elif isinstance(v, dict):
+        out = pack("<I", len(v))
+        for k in v:
+            out += _serialize(k)
+            out += _serialize(v[k])
     elif isinstance(v, Collection):
         out = pack("<I", len(v))
         for x in v:
@@ -45,14 +50,24 @@ def _deserialize(type_: Type[T], b: bytes) -> Tuple[T, bytes]:
         i = b.index(b"\x00")
         result = b[:i].decode()
         remaining = b[i + 1:]
-    elif isclass(get_origin(type_)) and issubclass(get_origin(type_), Collection):
-        args = get_args(type_)
-        len_ = unpack("<I", b[0:4])[0]
+    elif get_origin(type_) is dict:
+        key_type, val_type = get_args(type_)
+        len_, = unpack("<I", b[0:4])
+        result = {}
+        remaining = b[4:]
+        for _ in range(len_):
+            key, remaining = _deserialize(key_type, remaining)
+            val, remaining = _deserialize(val_type, remaining)
+            result[key] = val
+    elif isclass(origin := get_origin(type_)) and issubclass(origin, Collection):
+        element_type, = get_args(type_)
+        len_, = unpack("<I", b[0:4])
         result = []
         remaining = b[4:]
         for _ in range(len_):
-            v, remaining = _deserialize(args[0], remaining)
+            v, remaining = _deserialize(element_type, remaining)
             result.append(v)
+        result = origin(result) #type: ignore
     elif isclass(type_) and issubclass(type_, Serializable):
         result, remaining = type_._partial_deserialize(b)
     else:
