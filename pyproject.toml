@@ -19,9 +19,6 @@ classifiers = [
 ]
 keywords = ["serialize", "serialization"]
 requires-python = ">=3.9"
-dependencies = [
-    "typing-inspect==0.8.0"
-]
 
 [project.urls]
 Homepage = "https://github.com/SinclaM/miniserial"

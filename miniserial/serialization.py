@@ -7,7 +7,7 @@ from dataclasses import fields
 from struct import pack, unpack
 from abc import abstractmethod
 
-from typing_inspect import get_args, get_origin
+from typing import get_args, get_origin
 
 def _serialize(v) -> bytes:
     out: bytes
