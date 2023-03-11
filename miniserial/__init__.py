@@ -1,1 +1,1 @@
-from miniserial.serialization import Serializable
+from miniserial.serialization import Serializable, register_serializable
